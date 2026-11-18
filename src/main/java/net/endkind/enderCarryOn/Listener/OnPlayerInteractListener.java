@@ -2,10 +2,13 @@ package net.endkind.enderCarryOn.Listener;
 
 import net.endkind.enderCarryOn.Keys;
 import net.endkind.enderCarryOn.helpers.CarryHelper;
+import net.endkind.enderCarryOn.helpers.CarriedEntityData;
+import net.endkind.enderCarryOn.EnderCarryOn;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.EntitySnapshot;
+import org.bukkit.entity.Entity;
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -23,16 +26,25 @@ public class OnPlayerInteractListener implements Listener {
         if (item != null && item.hasItemMeta() && item.getItemMeta().getPersistentDataContainer().has(Keys.CARRY, org.bukkit.persistence.PersistentDataType.BYTE)) {
             
             // If it's an entity
-            if (item.getItemMeta().getPersistentDataContainer().has(Keys.ENTITY_DATA, org.bukkit.persistence.PersistentDataType.STRING)) {
+            if (CarriedEntityData.has(item.getItemMeta().getPersistentDataContainer(), Keys.ENTITY_DATA)) {
                 if (event.getAction().isRightClick() && event.getClickedBlock() != null) {
-                    String snapshotData = item.getItemMeta().getPersistentDataContainer().get(Keys.ENTITY_DATA, org.bukkit.persistence.PersistentDataType.STRING);
-                    EntitySnapshot snapshot = Bukkit.getEntityFactory().createEntitySnapshot(snapshotData);
-                    
-                    org.bukkit.Location location = event.getClickedBlock().getRelative(event.getBlockFace()).getLocation().add(0.5, 0, 0.5);
-                    snapshot.createEntity(location);
-                    
-                    player.getInventory().setItemInMainHand(null);
                     event.setCancelled(true);
+                    try {
+                        String snapshotData = CarriedEntityData.read(item.getItemMeta().getPersistentDataContainer(), Keys.ENTITY_DATA);
+                        if (snapshotData != null) {
+                            EntitySnapshot snapshot = Bukkit.getEntityFactory().createEntitySnapshot(snapshotData);
+                            org.bukkit.Location location = event.getClickedBlock().getRelative(event.getBlockFace()).getLocation().add(0.5, 0, 0.5);
+                            Entity restored = snapshot.createEntity(location);
+                            if (restored == null || !restored.isValid()) {
+                                player.sendMessage("Could not release this entity. Its carrier has been kept safe.");
+                                return;
+                            }
+                            player.getInventory().setItemInMainHand(null);
+                        }
+                    } catch (Exception ex) {
+                        EnderCarryOn.getInstance().getLogger().warning("Could not restore carried entity: " + ex.getClass().getSimpleName());
+                        player.sendMessage("Could not release this entity. Its carrier has been kept safe.");
+                    }
                 }
                 return;
             }

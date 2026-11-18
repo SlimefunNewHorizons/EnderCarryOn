@@ -71,7 +71,7 @@ public final class CarryHelper {
 
         itemMeta.setCustomModelData(Keys.ENTITY_ID);
         itemMeta.getPersistentDataContainer().set(Keys.CARRY, org.bukkit.persistence.PersistentDataType.BYTE, (byte) 1);
-        itemMeta.getPersistentDataContainer().set(Keys.ENTITY_DATA, org.bukkit.persistence.PersistentDataType.STRING, snapshotData);
+        CarriedEntityData.write(itemMeta.getPersistentDataContainer(), Keys.ENTITY_DATA, snapshotData);
 
         // Name of the entity
         String name = entity.getCustomName() != null ? entity.getCustomName() : entity.getType().getName();
